@@ -21,6 +21,7 @@ const printMessage = (message) => {
 
 const movePoint = ({x, y}) => {
 	console.log(`x = ${x} || y = ${y}`);
+	
 	point.style.left = `${x}px`;
 	point.style.top = `${y}px`;
 };

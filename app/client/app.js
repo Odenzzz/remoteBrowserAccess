@@ -6,11 +6,16 @@ const input = document.getElementById('input');
 
 const ws = new WebSocket('ws://localhost:3005');
 
-const setStatus = (value) => {
-
-	status.innerHTML = value;
-
+const getClientId = () => {
+	let id = localStorage.getItem('clientId');
+	if (id === null || id === undefined) {
+		id = Date.now();
+		localStorage.setItem('clientId', id);
+	}
+	return id;
 };
+
+
 
 const printMessage = (message) => {
 
@@ -22,22 +27,31 @@ const printMessage = (message) => {
 
 };
 
-// form.addEventListener('submit', (event) => {
-// 	event.preventDefault();
-// 	ws.send(input.value);
-// 	input.value = '';
-// });
 
 document.addEventListener('mousemove', (event) => {
 	let coords = {
 		x: event.clientX,
 		y: event.clientY
 	};
-	ws.send(JSON.stringify(coords));
+	// ws.send(JSON.stringify(coords));
 });
 
-ws.onopen = () => setStatus('ONLINE');
+const clientState = {
+	type: 'host',
+	clientId: getClientId(),
+	windowWidth: window.innerWidth,
+	windowHeight: window.innerHeight,
+};
+
+let message = {
+	type: 'init',
+	client: clientState
+}
+
+ws.onopen = () => ws.send(JSON.stringify(message));
 
 ws.onclose = () => setStatus('DISCONECTED');
 
 ws.onmessage = (response) => console.log(response);
+
+
