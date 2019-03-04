@@ -8,26 +8,35 @@ const server = new WebSocket.Server({port: 3005});
 const hostings = {};
 
 const getRandColor = () => {
-	const red = Math.random() * 255;
-	const green = Math.random() * 255;
-	const blue = Math.random() * 255;
+	const red = Math.floor(Math.random() * 255);
+	const green = Math.floor(Math.random() * 255);
+	const blue = Math.floor(Math.random() * 255);
 	const color = `rgba(${red}, ${green}, ${blue})`;
 
 	return color;
 };
 
+const generateUID = () => {
+	let firstPart = (Math.random() * 46656) | 0;
+	let secondPart = (Math.random() * 46656) | 0;
+	firstPart = ("000" + firstPart.toString(36)).slice(-3);
+	secondPart = ("000" + secondPart.toString(36)).slice(-3);
+	return String(firstPart + secondPart).toUpperCase();
+};
+
 class User{
-	constructor(ws, id){
+	constructor(ws, id, hostID){
 		this.ws = ws;
 		this.id = id;
+		this.hostID = hostID;
 		this.name = petname(1, ' ');
 		this.color = getRandColor();
 	}
 }
 
 class HostUser extends User{
-	constructor(ws, id, windowWidth, windowHeight, initDOM){
-		super(ws, id);
+	constructor(ws, id, hostID, windowWidth, windowHeight, initDOM){
+		super(ws, id, hostID);
 		this.currentConnections = [];
 		this.windowWidth = windowWidth;
 		this.windowHeight = windowHeight;
@@ -37,8 +46,9 @@ class HostUser extends User{
 
 server.on('connection', ws => {
 
+	const hostID = generateUID();
+
 	ws.on('message', (data) => {
-		console.log(ws);
 		data = JSON.parse(data);
 		switch (data.type){
 			case 'message':
@@ -47,25 +57,31 @@ server.on('connection', ws => {
 				clientData = data.state;
 				switch (clientData.type){
 					case 'host':
-						if (hostings[clientData.id] === undefined){
-							hostings[clientData.id] = new HostUser(
-									ws,
-									clientData.id,
-									clientData.params.windowWidth,
-									clientData.params.windowHeight,
-									clientData.__hostDOM
-								);
-						}
-						clientData = hostings[clientData.id];
+						hostings[hostID] = new HostUser(
+							ws,
+							clientData.params.id,
+							hostID,
+							clientData.params.windowWidth,
+							clientData.params.windowHeight,
+							clientData.__hostDOM			
+						);
+						clientData = hostings[hostID];
 						break;
 				}
-				server.clients.forEach((client) => {
-					if	(client.readyState === WebSocket.OPEN){
-						delete clientData.ws;
-						client.send(JSON.stringify(clientData));
+				clientData.ws.send(JSON.stringify({
+					type: 'setConnectionID',
+					state: {
+						hostID: clientData.hostID
 					}
-				});
+				}));
 				break;
 		}		
 	});
+
+	ws.on('close', () => {
+		if (hostings[hostID] !== undefined){
+			delete hostings[hostID];
+		}
+	});
+
 });

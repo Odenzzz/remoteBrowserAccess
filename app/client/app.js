@@ -9,6 +9,11 @@ const getClientId = () => {
 	return id;
 };
 
+const host = new URL(window.location.href).searchParams.get("host");
+
+if (host !== null){
+	createConnectionButton.remove();
+}
 
 class Connection {
 	constructor(url){
@@ -22,10 +27,23 @@ class Connection {
 		};
 		this.ws.onmessage = ({ data }) => {
 			data = JSON.parse(data);
-			console.log(data);
+			switch (data.type){
+				case 'setConnectionID':
+					this.connectionID = data.state.hostID;
+
+					let connectionLinkLabel = document.createElement('label');
+					connectionLinkLabel.setAttribute('class', 'connection-link');
+					connectionLinkLabel.append('Ссылка для подключения: ');
+					let inputLink = document.createElement('input');
+					inputLink.setAttribute('readonly', 'readonly');
+					inputLink.setAttribute('value', `${(window.location.href).substr(0, window.location.href.length - 1)}?host=${this.connectionID}`);
+					connectionLinkLabel.append(inputLink);
+					document.getElementById('body').appendChild(connectionLinkLabel);
+
+					break;
+			}
 		};
 	}
-
 	sendUpdateInput(id, value){
 		this.ws.send(JSON.stringify({
 			type: 'updateInput',
@@ -64,11 +82,11 @@ class HostConnection extends Connection{
 	getHostDOM(wrapper = 'view-container') {
 		let elementId = 1;
 		const mainContainer = document.getElementById(wrapper);
-		const watching_items = [...mainContainer.getElementsByTagName('input'), ...mainContainer.getElementsByTagName('textarea')];
-		for (let watching_item of watching_items){
-			watching_item.setAttribute('class', 'watch-input');
-			watching_item.setAttribute('id', `watch-input-${elementId++}`);
-			watching_item.setAttribute('data-value', watching_item.value);
+		const watchingItems = [...mainContainer.getElementsByTagName('input'), ...mainContainer.getElementsByTagName('textarea')];
+		for (let watchingItem of watchingItems){
+			watchingItem.setAttribute('class', 'watch-input');
+			watchingItem.setAttribute('id', `watch-input-${elementId++}`);
+			watchingItem.setAttribute('data-value', watchingItem.value);
 		}
 		return mainContainer.innerHTML;
 	}

@@ -5,17 +5,22 @@ body{
 }
 #create-connection{
 	position: absolute;
-	top: 0;
-	left: 0;
+	top: 0px;
+	left: 0px;
 }
 #view-container{
 	display: block;
 	width: 100vw;
 	height: 100vh;
-	padding: 25px;
+	padding: 50px 10px;
 }
 .connection-link{
 	position: absolute;
-	top: 0;
-	left: 0;
+	top: 5px;
+	left: 10px;
+}
+.connection-link input{
+	height: 25px;
+	width: 250px;
+	padding: 2px 10px;
 }
