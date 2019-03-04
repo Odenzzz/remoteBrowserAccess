@@ -5,16 +5,32 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	<title>Document</title>
+	<link rel="stylesheet" href="style.css">
 </head>
 <body>
+	<button id="create-connection">Create Connection</button>
+	<!-- <label class="connection-link">Ссылка для подключения: <input type="text" readonly value="asdasd"></label> -->
+	<div id="view-container">
+		<div>
+			<label>
+				Username:<br>
+				<input type="text">
+			</label>
+		</div>
+		<div>
+			<label>
+				Password:<br>
+				<input type="password">
+			</label>
+		</div>
+		<div>
+			<label>
+				Message:<br>	
+				<textarea cols="30" rows="10"></textarea>
+			</label>
+		</div>
+	</div>
 
-	<div id="status"></div>
-	<ul id="messages"></ul>
-
-	<!-- <form id="form">
-		<input type="text" id="input">
-		<input type="submit" value="Send">
-	</form> -->
 	<script src="app.js"></script>
 </body>
 </html>

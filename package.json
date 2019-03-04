@@ -19,6 +19,7 @@
   "homepage": "https://github.com/Odenzzz/remoteBrowserAccess#readme",
   "dependencies": {
     "node-petname": "^1.0.1",
+    "translate": "^1.0.4",
     "ws": "^6.1.4"
   }
 }

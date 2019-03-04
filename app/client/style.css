@@ -1,0 +1,21 @@
+body{
+	overflow: hidden;
+	padding: 0;
+	margin: 0;
+}
+#create-connection{
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+#view-container{
+	display: block;
+	width: 100vw;
+	height: 100vh;
+	padding: 25px;
+}
+.connection-link{
+	position: absolute;
+	top: 0;
+	left: 0;
+}

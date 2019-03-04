@@ -1,10 +1,4 @@
-const status = document.getElementById('status');
-const messages = document.getElementById('messages');
-const form = document.getElementById('form');
-const input = document.getElementById('input');
-
-
-const ws = new WebSocket('ws://localhost:3005');
+const createConnectionButton = document.getElementById('create-connection');
 
 const getClientId = () => {
 	let id = localStorage.getItem('clientId');
@@ -16,42 +10,81 @@ const getClientId = () => {
 };
 
 
+class Connection {
+	constructor(url){
+		this.ws = new WebSocket(url);
+		this.id = getClientId();
+		this.ws.onopen = () => {
+			this.ws.send(JSON.stringify({
+				type: 'init',
+				state: this
+			}));
+		};
+		this.ws.onmessage = ({ data }) => {
+			data = JSON.parse(data);
+			console.log(data);
+		};
+	}
 
-const printMessage = (message) => {
+	sendUpdateInput(id, value){
+		this.ws.send(JSON.stringify({
+			type: 'updateInput',
+			state: {
+				id: id,
+				value: value
+			}
+		}));
+	}
 
-	const li = document.createElement('li');
+	setInputValue(id, value){
 
-	li.innerHTML = message;
+	}
 
-	messages.appendChild(li);
+	sendMouseCoords(){
 
-};
+	}
 
+	getMousesCoords(mouses){
 
-document.addEventListener('mousemove', (event) => {
-	let coords = {
-		x: event.clientX,
-		y: event.clientY
-	};
-	// ws.send(JSON.stringify(coords));
-});
-
-const clientState = {
-	type: 'host',
-	clientId: getClientId(),
-	windowWidth: window.innerWidth,
-	windowHeight: window.innerHeight,
-};
-
-let message = {
-	type: 'init',
-	client: clientState
+	}
 }
 
-ws.onopen = () => ws.send(JSON.stringify(message));
+class HostConnection extends Connection{
+	constructor(url){
+		super(url);
+		this.type = 'host';
+		this.params = {
+			windowHeight: window.innerHeight,
+			windowWidth: window.innerWidth,
+			
+		};
+		this.__hostDOM = this.getHostDOM();
+	}
 
-ws.onclose = () => setStatus('DISCONECTED');
+	getHostDOM(wrapper = 'view-container') {
+		let elementId = 1;
+		const mainContainer = document.getElementById(wrapper);
+		const watching_items = [...mainContainer.getElementsByTagName('input'), ...mainContainer.getElementsByTagName('textarea')];
+		for (let watching_item of watching_items){
+			watching_item.setAttribute('class', 'watch-input');
+			watching_item.setAttribute('id', `watch-input-${elementId++}`);
+			watching_item.setAttribute('data-value', watching_item.value);
+		}
+		return mainContainer.innerHTML;
+	}
 
-ws.onmessage = (response) => console.log(response);
+	get hostDOM(){
+		this.__hostDOM = this.getHostDOM();
+		return this.__hostDOM;
+	}
+}
+
+
+
+createConnectionButton.addEventListener('click', (event) => {
+	const host = new HostConnection('ws://localhost:3005');
+	event.target.remove();
+});
+
 
 
