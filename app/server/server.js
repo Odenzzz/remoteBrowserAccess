@@ -15,7 +15,6 @@ const getRandColor = () => {
 
 	return color;
 };
-
 const generateUID = () => {
 	let firstPart = (Math.random() * 46656) | 0;
 	let secondPart = (Math.random() * 46656) | 0;
@@ -25,24 +24,88 @@ const generateUID = () => {
 };
 
 class User{
-	constructor(ws, id, hostID){
+	constructor(ws, hostID, id, params = {}){
 		this.ws = ws;
 		this.id = id;
 		this.hostID = hostID;
 		this.name = petname(1, ' ');
 		this.color = getRandColor();
+		this.params = params;
 	}
 }
 
 class HostUser extends User{
-	constructor(ws, id, hostID, windowWidth, windowHeight, initDOM){
-		super(ws, id, hostID);
+	constructor(ws, hostID, id, params){
+		const windowWidth = params.windowWidth;
+		const windowHeight = params.windowHeight;
+		delete params.windowHeight;
+		delete params.windowWidth;
+
+		super(ws, hostID, id, params);
 		this.currentConnections = [];
 		this.windowWidth = windowWidth;
 		this.windowHeight = windowHeight;
-		this.initDOM = initDOM;
+	}
+	get connectionState(){
+		return {
+			hostDOM: this.getHostDOM()
+		};
+	}
+
+	getHostDOM(){
+		return this.ws.send({
+			type: 'getHostDOM',
+			state: {
+
+			}
+		});
 	}
 }
+
+const connect = (ws, hostID, clientData) => {
+	return new Promise((resolve, reject) => {
+		switch (clientData.type){
+			case 'host':
+				hostings[hostID] = new HostUser(
+					ws,
+					hostID,
+					clientData.id,
+					clientData.params
+				);
+				resolve({
+					clientData: hostings[hostID],
+					event: {
+						type: 'setConnectionID',
+						state: {
+							hostID: hostID
+						}
+					}
+				});
+				break;
+			case 'viewer':
+				if (hostings[clientData.host] === undefined){
+					reject({
+						ws: ws,
+						error: 'Connection is not available! Closing connection...'
+					});
+				}else{
+					const viewer = new User(ws, clientData.host, clientData.id, clientData.params);
+					hostings[clientData.host].currentConnections.push(viewer);
+					const connectionState = hostings[clientData.host].connectionState();
+					resolve({
+						clientData: viewer,
+						event: {
+							type: 'setConnectState',
+							state: {
+
+							}
+						}
+					});
+				}
+				break;
+		}
+	});
+};
 
 server.on('connection', ws => {
 
@@ -54,26 +117,19 @@ server.on('connection', ws => {
 			case 'message':
 				break;
 			case 'init':
-				clientData = data.state;
-				switch (clientData.type){
-					case 'host':
-						hostings[hostID] = new HostUser(
-							ws,
-							clientData.params.id,
-							hostID,
-							clientData.params.windowWidth,
-							clientData.params.windowHeight,
-							clientData.__hostDOM			
-						);
-						clientData = hostings[hostID];
-						break;
-				}
-				clientData.ws.send(JSON.stringify({
-					type: 'setConnectionID',
-					state: {
-						hostID: clientData.hostID
-					}
-				}));
+				connect(ws, hostID, data.state)
+				.then(({clientData, event})=>{
+					clientData.ws.send(JSON.stringify(event));
+				})
+				.catch(({ws, error}) => {
+					ws.send(JSON.stringify({
+						type: 'error',
+						state: {
+							error: error
+						}
+					}));
+					ws.close();
+				});
 				break;
 		}		
 	});

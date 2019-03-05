@@ -9,11 +9,7 @@ const getClientId = () => {
 	return id;
 };
 
-const host = new URL(window.location.href).searchParams.get("host");
 
-if (host !== null){
-	createConnectionButton.remove();
-}
 
 class Connection {
 	constructor(url){
@@ -25,25 +21,19 @@ class Connection {
 				state: this
 			}));
 		};
+		this.events = {
+			'error': this.throwError
+		};
 		this.ws.onmessage = ({ data }) => {
 			data = JSON.parse(data);
-			switch (data.type){
-				case 'setConnectionID':
-					this.connectionID = data.state.hostID;
-
-					let connectionLinkLabel = document.createElement('label');
-					connectionLinkLabel.setAttribute('class', 'connection-link');
-					connectionLinkLabel.append('Ссылка для подключения: ');
-					let inputLink = document.createElement('input');
-					inputLink.setAttribute('readonly', 'readonly');
-					inputLink.setAttribute('value', `${(window.location.href).substr(0, window.location.href.length - 1)}?host=${this.connectionID}`);
-					connectionLinkLabel.append(inputLink);
-					document.getElementById('body').appendChild(connectionLinkLabel);
-
-					break;
-			}
+			this.events[data.type](data.state);
 		};
 	}
+
+	throwError(state){
+		console.error(`Something went wrong: (${state.error})`);
+	}
+	
 	sendUpdateInput(id, value){
 		this.ws.send(JSON.stringify({
 			type: 'updateInput',
@@ -74,9 +64,21 @@ class HostConnection extends Connection{
 		this.params = {
 			windowHeight: window.innerHeight,
 			windowWidth: window.innerWidth,
-			
 		};
-		this.__hostDOM = this.getHostDOM();
+		this.events.setConnectionID = this.setConnectionID;
+	}
+
+	setConnectionID(state) {
+		this.connectionID = state.hostID;
+		console.log('connected');
+		let connectionLinkLabel = document.createElement('label');
+		connectionLinkLabel.setAttribute('class', 'connection-link');
+		connectionLinkLabel.append('Ссылка для подключения: ');
+		let inputLink = document.createElement('input');
+		inputLink.setAttribute('readonly', 'readonly');
+		inputLink.setAttribute('value', `${(window.location.href).substr(0, window.location.href.length - 1)}?host=${this.connectionID}`);
+		connectionLinkLabel.append(inputLink);
+		document.getElementById('body').appendChild(connectionLinkLabel);
 	}
 
 	getHostDOM(wrapper = 'view-container') {
@@ -92,8 +94,18 @@ class HostConnection extends Connection{
 	}
 
 	get hostDOM(){
-		this.__hostDOM = this.getHostDOM();
-		return this.__hostDOM;
+		return this.getHostDOM();
+	}
+}
+
+class ViewerConnecion extends Connection{
+	constructor(url, host){
+		super(url);
+		this.type = 'viewer';
+		this.host = host;
+		this.params = {
+
+		};
 	}
 }
 
@@ -105,4 +117,9 @@ createConnectionButton.addEventListener('click', (event) => {
 });
 
 
+const host = new URL(window.location.href).searchParams.get("host");
 
+if (host !== null){
+	const viewer = new ViewerConnecion('ws://localhost:3005', host);
+	createConnectionButton.remove();
+}
