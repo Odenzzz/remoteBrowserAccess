@@ -2,22 +2,39 @@ body{
 	overflow: hidden;
 	padding: 0;
 	margin: 0;
+	background-color: #777;
 }
+*{
+	box-sizing: border-box;
+}
+#view-container{
+	display: block;
+	width: 100%;
+	height: 100%;
+	padding: 50px 10px;
+	background-color: #fff;
+}
+.main-container{
+	width: 100vw;
+	height: 100vh;
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+
 #create-connection{
 	position: absolute;
 	top: 0px;
 	left: 0px;
-}
-#view-container{
-	display: block;
-	width: 100vw;
-	height: 100vh;
-	padding: 50px 10px;
+	z-index: 99;
 }
 .connection-link{
 	position: absolute;
 	top: 5px;
 	left: 10px;
+	z-index: 99;
 }
 .connection-link input{
 	height: 25px;

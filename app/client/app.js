@@ -9,43 +9,92 @@ const getClientId = () => {
 	return id;
 };
 
+// const hostDOM = (wrapper = 'view-container') => {
+// 	let elementId = 1;
+// 	const mainContainer = document.getElementById(wrapper);
+// 	const watchingItems = [...mainContainer.getElementsByTagName('input'), ...mainContainer.getElementsByTagName('textarea')];
+// 	for (let watchingItem of watchingItems){
+// 		watchingItem.setAttribute('class', 'watch-input');
+// 		watchingItem.setAttribute('id', `watch-input-${elementId++}`);
+// 		watchingItem.setAttribute('data-value', watchingItem.value);
+// 		watchingItem.addEventListener('keydown', (event) => {
+// 			console.log(event);
+// 		});
+// 	}
+// 	return mainContainer.innerHTML;
+// }
 
 
 class Connection {
 	constructor(url){
 		this.ws = new WebSocket(url);
-		this.id = getClientId();
+		this.userID = getClientId();
+		this.params = {};
 		this.ws.onopen = () => {
 			this.ws.send(JSON.stringify({
 				type: 'init',
 				state: this
 			}));
 		};
-		this.events = {
-			'error': this.throwError
+		this.eventsMap = {
+			'error': 'throwError',
+			'setConnectState': 'setConnectState',
+			'setDOM': 'setDOM',
+			'setInputValue': 'setInputValue'
 		};
 		this.ws.onmessage = ({ data }) => {
 			data = JSON.parse(data);
-			this.events[data.type](data.state);
+			this[this.eventsMap[data.type]](data.state);
 		};
+	}
+
+	hostDOMUpdate(wrapper = 'view-container'){
+		let elementId = 1;
+		const mainContainer = document.getElementById(wrapper);
+		const watchItems = [...mainContainer.getElementsByTagName('input'), ...mainContainer.getElementsByTagName('textarea')];
+		for (let watchItem of watchItems){
+			watchItem.setAttribute('class', 'watch-input');
+			watchItem.setAttribute('id', `watch-input-${elementId++}`);
+			watchItem.setAttribute('data-value', watchItem.value);
+			watchItem.addEventListener('keyup', (event) => this.sendInputUpdate(event.target, this.userID, 'host'));
+		}
+		return mainContainer.innerHTML;
+	}
+
+	setDOM(state){
+		const contentWrapper = document.getElementById('view-container');
+		contentWrapper.style.cssText = `width: ${state.hostWindowWidth}px; height: ${state.hostWindowHeight}px`;
+		contentWrapper.innerHTML = state.DOM;
+		const watchItems = document.getElementsByClassName('watch-input');
+		for (let watchItem of watchItems){
+			watchItem.value = watchItem.dataset.value;
+			watchItem.addEventListener('keyup', (event) => this.sendInputUpdate(event.target, this.userID, this.hostID));
+			watchItem.removeAttribute('data-value');
+		}
+	}
+
+	sendInputUpdate (input, senderID, hostID) {
+		this.ws.send(JSON.stringify({
+			type: 'inputUpdate',
+			state: {
+				inputID: input.getAttribute('id'),
+				senderID: senderID,
+				hostID: hostID,
+				inputValue: input.value
+			}
+		}));
 	}
 
 	throwError(state){
 		console.error(`Something went wrong: (${state.error})`);
 	}
-	
-	sendUpdateInput(id, value){
-		this.ws.send(JSON.stringify({
-			type: 'updateInput',
-			state: {
-				id: id,
-				value: value
-			}
-		}));
+
+	setConnectState(state){
+		console.log(state);
 	}
 
-	setInputValue(id, value){
-
+	setInputValue(state){
+		document.getElementById(state.inputID).value = state.inputValue;
 	}
 
 	sendMouseCoords(){
@@ -58,18 +107,48 @@ class Connection {
 }
 
 class HostConnection extends Connection{
+
 	constructor(url){
 		super(url);
 		this.type = 'host';
-		this.params = {
-			windowHeight: window.innerHeight,
-			windowWidth: window.innerWidth,
-		};
-		this.events.setConnectionID = this.setConnectionID;
+		this.eventsMap.setConnectionID = 'setConnectionID';
+
+		this.eventsMap.responceWaitingMessage = 'setConnectionID';
+
+		this.eventsMap.getHostDOM = 'getHostDOM';
+	}
+
+
+	getHostDOM (state) {
+		this.windowWidth = window.innerWidth;
+		this.windowHeight = window.innerHeight;
+		this.ws.send(JSON.stringify({
+			type: 'sendDOM',
+			state: {
+				DOM: this.hostDOMUpdate(),
+				hostWindowWidth: this.windowWidth,
+				hostWindowHeight: this.windowHeight,
+				userID: state.userID
+			}
+		}));
+	}
+
+	get windowWidth(){
+		return this.params.windowWidth;
+	}
+	set windowWidth(width){
+		this.params.windowWidth = width;
+	}
+
+	get windowHeight(){
+		return this.params.windowHeight;
+	}
+	set windowHeight(height){
+		this.params.windowHeight = height;
 	}
 
 	setConnectionID(state) {
-		this.connectionID = state.hostID;
+		this.connectionID = state.connectionID;
 		console.log('connected');
 		let connectionLinkLabel = document.createElement('label');
 		connectionLinkLabel.setAttribute('class', 'connection-link');
@@ -81,28 +160,14 @@ class HostConnection extends Connection{
 		document.getElementById('body').appendChild(connectionLinkLabel);
 	}
 
-	getHostDOM(wrapper = 'view-container') {
-		let elementId = 1;
-		const mainContainer = document.getElementById(wrapper);
-		const watchingItems = [...mainContainer.getElementsByTagName('input'), ...mainContainer.getElementsByTagName('textarea')];
-		for (let watchingItem of watchingItems){
-			watchingItem.setAttribute('class', 'watch-input');
-			watchingItem.setAttribute('id', `watch-input-${elementId++}`);
-			watchingItem.setAttribute('data-value', watchingItem.value);
-		}
-		return mainContainer.innerHTML;
-	}
-
-	get hostDOM(){
-		return this.getHostDOM();
-	}
+	
 }
 
 class ViewerConnecion extends Connection{
 	constructor(url, host){
 		super(url);
 		this.type = 'viewer';
-		this.host = host;
+		this.hostID = host;
 		this.params = {
 
 		};
