@@ -133,6 +133,7 @@ class HostConnection extends Connection{
 		}));
 	}
 
+
 	get windowWidth(){
 		return this.params.windowWidth;
 	}
@@ -160,7 +161,7 @@ class HostConnection extends Connection{
 		document.getElementById('body').appendChild(connectionLinkLabel);
 	}
 
-	
+
 }
 
 class ViewerConnecion extends Connection{
