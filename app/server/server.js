@@ -1,6 +1,7 @@
 const WebSocket = require('ws');
 const petname = require('node-petname');
-const translate = require('translate');
+
+
 
 const server = new WebSocket.Server({port: 3005});
 
@@ -34,7 +35,7 @@ class User{
 		this.responseWaitingList = {};
 	}
 	sendWaitingResponce(){
-		
+
 	}
 }
 class HostUser extends User{
@@ -99,7 +100,7 @@ const connect = (clientData) => {
 	});
 };
 
-server.on('connection', ws => {
+server.on('connection', (ws) => {
 
 	const connectionID = generateUID();
 
@@ -156,7 +157,7 @@ server.on('connection', ws => {
 					ws.close();
 				});
 				break;
-		}		
+		}
 	});
 
 	ws.on('close', () => {
